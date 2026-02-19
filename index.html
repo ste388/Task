@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Gestore Pratiche Mobile</title>
+    <title>Gestore Pratiche (Cloud)</title>
     <style>
-        /* BASE (Desktop & Generale) */
+        /* --- STILE BASE (Mobile First) --- */
         body { 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
             background-color: #f0f2f5; color: #333; margin: 0; padding: 10px; 
-            -webkit-tap-highlight-color: transparent; /* Rimuove evidenziazione al tocco su Android */
+            -webkit-tap-highlight-color: transparent;
         }
         
         .container { 
@@ -19,28 +19,21 @@
 
         h1 { font-size: 1.5rem; text-align: center; color: #2c3e50; margin: 10px 0 20px 0; }
 
-        /* INPUT GROUP: Su mobile diventa colonna */
+        /* INSERIMENTO DATI */
         .input-group { 
             display: flex; gap: 10px; margin-bottom: 20px; 
             background: #eef2f5; padding: 15px; border-radius: 12px;
         }
 
-        .field-box { flex: 1; }
-        
         input, button { 
             width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; 
-            font-size: 16px; box-sizing: border-box; /* Importante per mobile */
+            font-size: 16px; box-sizing: border-box; 
         }
 
-        /* Bottoni Principali */
-        #btnMain, #btnCancel { 
-            font-weight: bold; color: white; border: none; 
-            text-transform: uppercase; letter-spacing: 1px; cursor: pointer;
-        }
-        #btnMain { background-color: #27ae60; }
-        #btnCancel { background-color: #7f8c8d; display: none; margin-top: 10px; }
+        #btnMain { background-color: #27ae60; color: white; border: none; font-weight: bold; text-transform: uppercase; cursor: pointer; }
+        #btnCancel { background-color: #7f8c8d; color: white; border: none; font-weight: bold; display: none; margin-top: 10px; cursor: pointer; }
 
-        /* LISTA ATTIVITÀ */
+        /* LISTA */
         ul { list-style: none; padding: 0; margin: 0; }
         
         li { 
@@ -53,69 +46,52 @@
         .task-title { font-size: 18px; font-weight: 600; display: block; margin-bottom: 5px; }
         .task-meta { font-size: 14px; color: #666; display: block; }
 
-        /* AZIONI (Bottoni Icona) */
         .task-actions { display: flex; gap: 8px; }
         .btn-action { 
             width: 40px; height: 40px; border-radius: 8px; border: none; color: white;
-            font-size: 18px; display: flex; align-items: center; justify-content: center;
-            cursor: pointer;
+            font-size: 18px; display: flex; align-items: center; justify-content: center; cursor: pointer;
         }
 
-        /* COLORI STATO E BOTTONI */
+        /* STATI */
         .status-ok { border-left: 6px solid #27ae60; }
         .status-warning { border-left: 6px solid #f1c40f; background-color: #fffbf0; }
         .status-danger { border-left: 6px solid #e74c3c; background-color: #fff5f5; }
         .status-done { border-left: 6px solid #95a5a6; opacity: 0.7; }
         .status-done .task-title { text-decoration: line-through; }
 
+        /* COLORI BOTTONI */
         .btn-edit { background-color: #f39c12; }
         .btn-log { background-color: #3498db; }
         .btn-done { background-color: #27ae60; }
         .btn-del { background-color: #e74c3c; }
 
-        /* MODALE (Pop-up) */
+        /* MODALE */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 999; align-items: center; justify-content: center; }
         .modal-content { 
             background: white; padding: 20px; width: 90%; max-width: 400px; 
-            border-radius: 12px; position: relative; max-height: 80vh; display: flex; flex-direction: column;
+            border-radius: 12px; display: flex; flex-direction: column; max-height: 80vh;
         }
         .log-history { flex: 1; overflow-y: auto; margin: 10px 0; border: 1px solid #eee; padding: 10px; }
-        .log-entry { padding: 8px 0; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center;}
-        
-        /* MEDIA QUERY: OTTIMIZZAZIONE PER SMARTPHONE */
+        .log-entry { padding: 8px 0; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; }
+
+        /* MEDIA QUERY MOBILE */
         @media (max-width: 600px) {
-            body { padding: 5px; background: #fff; }
-            .container { padding: 10px; box-shadow: none; }
-            
-            /* Form in colonna verticale */
-            .input-group { flex-direction: column; gap: 10px; padding: 10px; }
-            #btnMain, #btnCancel { height: 50px; font-size: 16px; margin-top: 5px; }
-            
-            /* Lista task ottimizzata per tocco */
-            li { flex-direction: column; align-items: flex-start; padding: 15px; }
+            .input-group { flex-direction: column; gap: 10px; }
+            li { flex-direction: column; align-items: flex-start; }
             .task-info { width: 100%; margin-bottom: 12px; }
-            
-            /* Bottoni azioni belli grandi e larghi sotto il testo */
-            .task-actions { 
-                width: 100%; justify-content: space-between; 
-                border-top: 1px solid #f0f0f0; padding-top: 10px;
-            }
-            .btn-action { 
-                flex-grow: 1; height: 45px; /* Alti per il dito */
-                margin: 0 4px; /* Spazio tra bottoni */
-                border-radius: 6px;
-            }
+            .task-actions { width: 100%; justify-content: space-between; padding-top: 10px; border-top: 1px solid #f0f0f0; }
+            .btn-action { flex-grow: 1; margin: 0 3px; height: 45px; }
         }
     </style>
+
+    <!-- FIREBASE SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
 </head>
 <body>
 
 <div class="container">
-    <h1>🏛️ Pratiche Comune</h1>
-    
-    <div style="text-align: center; margin-bottom: 15px;">
-        <button onclick="richiediPermessoNotifiche()" id="btnNotifiche" style="background:#e67e22; color:white; border:none; padding: 8px 20px; border-radius: 20px; font-size:14px;">🔔 Attiva Notifiche</button>
-    </div>
+    <h1>🏛️ Pratiche Comune (Cloud)</h1>
 
     <!-- Area Inserimento -->
     <div class="input-group">
@@ -126,6 +102,10 @@
     </div>
 
     <!-- Lista -->
+    <div id="loading" style="text-align:center; color:#666; padding:20px;">
+        ⏳ Sto caricando le pratiche dal server...<br>
+        <small>(Se rimane così, controlla le Regole di Firebase)</small>
+    </div>
     <ul id="listaTask"></ul>
 </div>
 
@@ -136,20 +116,61 @@
         <div class="log-history" id="logHistoryContainer"></div>
         <div style="display:flex; gap:10px; margin-top:10px;">
             <input type="text" id="newLogInput" placeholder="Nuova nota..." style="flex:1;">
-            <button class="btn-log" onclick="aggiungiLog()" style="width: auto; padding: 0 20px; border-radius:5px;">Salva</button>
+            <button class="btn-log" onclick="aggiungiLog()" style="width: auto; padding: 0 20px; border-radius:5px; color:white; border:none;">Salva</button>
         </div>
-        <button onclick="chiudiModal()" style="margin-top:15px; background: #eee; color:#333; border:none;">Chiudi</button>
+        <button onclick="chiudiModal()" style="margin-top:15px; padding:10px; background: #eee; border:none; border-radius:5px; cursor:pointer;">Chiudi</button>
     </div>
 </div>
 
 <script>
-    let tasks = JSON.parse(localStorage.getItem('comuneTasks')) || [];
+    // -----------------------------------------------------------
+    // I TUOI DATI FIREBASE
+    // -----------------------------------------------------------
+    const firebaseConfig = {
+      apiKey: "AIzaSyAL97hOMZQ1-Jr6pFUpu23QiJRuLbrUtcg",
+      authDomain: "task-27d22.firebaseapp.com",
+      projectId: "task-27d22",
+      storageBucket: "task-27d22.firebasestorage.app",
+      messagingSenderId: "949506308246",
+      appId: "1:949506308246:web:9de5575e3afff3ef55eab7"
+    };
+    // -----------------------------------------------------------
+
+    // Inizializza Firebase
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    }
+    const db = firebase.firestore();
+    const collectionName = "promemoria_comune"; 
+
+    let tasks = [];
     let currentLogId = null; 
     let editingTaskId = null; 
 
-    renderTasks();
-    setInterval(checkReminders, 60000); 
+    // AVVIO: Ascolta il DB in tempo reale
+    db.collection(collectionName).onSnapshot((querySnapshot) => {
+        tasks = [];
+        querySnapshot.forEach((doc) => {
+            let data = doc.data();
+            data.id = doc.id; // Salviamo l'ID del documento Firestore
+            tasks.push(data);
+        });
+        document.getElementById('loading').style.display = 'none';
+        renderTasks();
+        
+        // Se la modale è aperta, rinfrescala (utile se cancelli log)
+        if(currentLogId && document.getElementById('modalLog').style.display === 'flex') {
+             apriLog(currentLogId, false); // false = non riaprire, solo aggiorna
+        }
+    }, (error) => {
+        console.log("Errore:", error);
+        document.getElementById('loading').innerHTML = "Errore di connessione al Database.<br>Verifica le Regole di Sicurezza in Firebase Console.";
+    });
 
+    // Controllo audio ogni 60 secondi
+    setInterval(cicloControllo, 60000); 
+
+    // --- SALVATAGGIO ---
     function gestisciSalvataggio() {
         const testo = document.getElementById('taskInput').value.trim();
         const data = document.getElementById('dateInput').value;
@@ -157,26 +178,47 @@
         if (testo === '') { alert("Inserisci il nome!"); return; }
 
         if (editingTaskId) {
-            const task = tasks.find(t => t.id === editingTaskId);
-            if (task) {
-                task.text = testo;
-                task.deadline = data;
-            }
-            annullaModifica();
+            // AGGIORNA
+            db.collection(collectionName).doc(editingTaskId).update({
+                text: testo,
+                deadline: data,
+                notified: false 
+            }).then(() => annullaModifica());
         } else {
+            // NUOVO
             if (data === '' && !confirm("Salvare senza scadenza?")) return;
-            const newTask = {
-                id: Date.now(),
+            
+            db.collection(collectionName).add({
                 text: testo,
                 deadline: data,
                 done: false,
-                logs: []
-            };
-            tasks.push(newTask);
-            document.getElementById('taskInput').value = '';
-            document.getElementById('dateInput').value = '';
+                notified: false,
+                logs: [],
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            }).then(() => {
+                document.getElementById('taskInput').value = '';
+                document.getElementById('dateInput').value = '';
+            });
         }
-        salvaEaggiorna();
+    }
+
+    // --- LOGICA UTENTE ---
+    function cicloControllo() {
+        renderTasks(); 
+        const now = new Date();
+        let suona = false;
+        tasks.forEach(t => {
+            if(!t.done && t.deadline) {
+                const diff = (new Date(t.deadline) - now) / 60000;
+                // Beep locale se mancano 30 minuti
+                if(diff > 0 && diff <= 30 && !t.notified) {
+                    suona = true;
+                    // Aggiorna DB per non suonare all'infinito su tutti i device
+                    db.collection(collectionName).doc(t.id).update({ notified: true });
+                }
+            }
+        });
+        if(suona) playBeep();
     }
 
     function avviaModifica(id) {
@@ -230,7 +272,6 @@
                 const scad = new Date(task.deadline);
                 const diffOre = (scad - now) / (1000 * 60 * 60);
                 
-                // Formato data breve per mobile
                 scadenzaTesto = scad.toLocaleString('it-IT', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'});
 
                 if (diffOre < 0) statusClass = 'status-danger'; 
@@ -243,101 +284,98 @@
                     <span class="task-title">${task.text}</span>
                     <span class="task-meta">
                         ${task.deadline ? '⏳ ' + scadenzaTesto : '⚪ No data'} 
-                        | 📝 Note: ${task.logs.length}
+                        | 📝 Note: ${task.logs ? task.logs.length : 0}
                     </span>
                 </div>
                 <div class="task-actions">
-                    <button class="btn-action btn-edit" onclick="avviaModifica(${task.id})">✏️</button>
-                    <button class="btn-action btn-log" onclick="apriLog(${task.id})">📝</button>
-                    <button class="btn-action btn-done" onclick="toggleDone(${task.id})">✅</button>
-                    <button class="btn-action btn-del" onclick="eliminaTask(${task.id})">🗑️</button>
+                    <button class="btn-action btn-edit" onclick="avviaModifica('${task.id}')">✏️</button>
+                    <button class="btn-action btn-log" onclick="apriLog('${task.id}', true)">📝</button>
+                    <button class="btn-action btn-done" onclick="toggleDone('${task.id}', ${task.done})">✅</button>
+                    <button class="btn-action btn-del" onclick="eliminaTask('${task.id}')">🗑️</button>
                 </div>
             `;
             lista.appendChild(li);
         });
     }
 
-    function apriLog(id) {
+    // --- LOG ---
+    function apriLog(id, showModal) {
         currentLogId = id;
         const task = tasks.find(t => t.id === id);
+        if(!task) return; // Task cancellato mentre guardavo
+        
         document.getElementById('modalTitle').innerText = task.text;
         const container = document.getElementById('logHistoryContainer');
         container.innerHTML = '';
 
-        if(task.logs.length === 0) container.innerHTML = '<div style="color:#999; text-align:center;">Nessuna nota.</div>';
+        const logs = task.logs || [];
+        if(logs.length === 0) container.innerHTML = '<div style="color:#999; text-align:center;">Nessuna nota.</div>';
         
-        task.logs.map((log, index) => ({ log, originalIndex: index })).reverse().forEach(item => {
+        // Render inverso
+        logs.map((log, index) => ({ log, originalIndex: index })).reverse().forEach(item => {
             container.innerHTML += `
                 <div class="log-entry">
                     <div style="flex:1;">
                         <small style="color:#888">${item.log.date}</small><br>
                         ${item.log.text}
                     </div>
-                    <button onclick="eliminaLog(${id}, ${item.originalIndex})" style="width:auto; background:none; color:red; border:none; padding:5px; font-size:18px;">✕</button>
+                    <button onclick="eliminaLog('${id}', ${item.originalIndex})" style="color:red; background:none; border:none; font-size:18px; padding:10px;">✕</button>
                 </div>`;
         });
-        document.getElementById('modalLog').style.display = 'flex';
+        
+        if(showModal) document.getElementById('modalLog').style.display = 'flex';
     }
 
     function aggiungiLog() {
         const txt = document.getElementById('newLogInput').value;
         if(!txt) return;
-        const task = tasks.find(t => t.id === currentLogId);
-        task.logs.push({ date: new Date().toLocaleDateString('it-IT'), text: txt });
-        salvaEaggiorna();
-        apriLog(currentLogId);
-        document.getElementById('newLogInput').value = '';
+        
+        const newLog = { date: new Date().toLocaleDateString('it-IT'), text: txt };
+        
+        db.collection(collectionName).doc(currentLogId).update({
+            logs: firebase.firestore.FieldValue.arrayUnion(newLog)
+        }).then(() => {
+            document.getElementById('newLogInput').value = '';
+        });
     }
 
     function eliminaLog(taskId, idx) {
         if(confirm("Cancello nota?")) {
-            tasks.find(t=>t.id===taskId).logs.splice(idx, 1);
-            salvaEaggiorna();
-            apriLog(taskId);
+            // Metodo sicuro: leggo, taglio l'array, riscrivo tutto l'array
+            // Questo evita problemi se ci sono due note identiche
+            const taskRef = db.collection(collectionName).doc(taskId);
+            
+            // Dobbiamo usare i dati che abbiamo già in memoria 'tasks' per fare prima
+            const task = tasks.find(t => t.id === taskId);
+            const newLogs = [...task.logs]; // Copia array
+            newLogs.splice(idx, 1); // Rimuovi elemento all'indice esatto
+            
+            taskRef.update({ logs: newLogs });
         }
     }
 
-    function toggleDone(id) {
-        const t = tasks.find(x=>x.id===id); t.done = !t.done; salvaEaggiorna();
+    function toggleDone(id, currentStatus) {
+        db.collection(collectionName).doc(id).update({ done: !currentStatus });
     }
     
     function eliminaTask(id) {
-        if(confirm("Eliminare?")) { 
-            tasks = tasks.filter(t=>t.id!==id); 
+        if(confirm("Eliminare definitivamente?")) { 
+            db.collection(collectionName).doc(id).delete();
             if (editingTaskId === id) annullaModifica();
-            salvaEaggiorna(); 
         }
     }
 
-    function salvaEaggiorna() {
-        localStorage.setItem('comuneTasks', JSON.stringify(tasks));
-        renderTasks();
+    function playBeep() {
+        try {
+            const ctx = new (window.AudioContext||window.webkitAudioContext)();
+            const o = ctx.createOscillator();
+            o.type='sine'; o.frequency.setValueAtTime(880, ctx.currentTime);
+            o.connect(ctx.destination); o.start(); o.stop(ctx.currentTime+0.5);
+        } catch(e) {}
     }
     
     function chiudiModal() { document.getElementById('modalLog').style.display = 'none'; }
     function seInvio(e) { if(e.key==='Enter') gestisciSalvataggio(); }
-
-    function richiediPermessoNotifiche() {
-        if(!("Notification" in window)) alert("Browser non supporta notifiche");
-        else Notification.requestPermission().then(p => { 
-            if(p==="granted") document.getElementById('btnNotifiche').style.display='none'; 
-        });
-    }
-
-    function checkReminders() {
-        if(Notification.permission!=="granted") return;
-        const now = new Date();
-        tasks.forEach(t => {
-            if(!t.done && t.deadline) {
-                const diff = (new Date(t.deadline) - now) / 60000;
-                if(diff > 0 && diff <= 30 && !t.notified) {
-                    new Notification("⚠️ Scadenza!", { body: t.text });
-                    t.notified = true; 
-                    salvaEaggiorna();
-                }
-            }
-        });
-    }
     window.onclick = e => { if(e.target == document.getElementById('modalLog')) chiudiModal(); }
 </script>
 </body>
