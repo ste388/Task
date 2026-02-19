@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestore Pratiche Comune</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f9; color: #333; margin: 0; padding: 20px; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        
+        h1 { text-align: center; color: #2c3e50; margin-bottom: 20px; }
+        
+        /* Form inserimento */
+        .input-group { 
+            display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; 
+            background: #eef2f5; padding: 15px; border-radius: 8px; border: 1px solid #ddd; align-items: flex-end;
+        }
+        .input-label { font-size: 12px; color: #555; margin-bottom: 4px; display: block; font-weight: bold;}
+        
+        .field-box { flex-grow: 1; }
+        
+        input, select, button { padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 14px; width: 100%; box-sizing: border-box; }
+        button { cursor: pointer; font-weight: bold; transition: 0.2s; width: auto; }
+        
+        /* Bottoni Inserimento/Modifica */
+        #btnMain { background-color: #27ae60; color: white; border: none; height: 42px; min-width: 100px; }
+        #btnMain:hover { background-color: #219150; }
+        
+        #btnCancel { background-color: #95a5a6; color: white; border: none; height: 42px; display: none; }
+        #btnCancel:hover { background-color: #7f8c8d; }
+
+        /* Lista attività */
+        ul { list-style: none; padding: 0; }
+        li { background: #fff; border-bottom: 1px solid #eee; padding: 15px; display: flex; justify-content: space-between; align-items: center; transition: 0.3s; }
+        li:hover { background-color: #f9f9f9; }
+        
+        .task-info { flex-grow: 1; }
+        .task-title { font-size: 16px; font-weight: bold; display: block; }
+        .task-meta { font-size: 13px; color: #666; margin-top: 4px; display: block; }
+        .task-actions { display: flex; gap: 5px; }
+
+        /* Colori scadenze */
+        .status-ok { border-left: 5px solid #27ae60; } 
+        .status-warning { border-left: 5px solid #f1c40f; background-color: #fffae6; } 
+        .status-danger { border-left: 5px solid #e74c3c; background-color: #ffeaea; } 
+        .status-done { border-left: 5px solid #95a5a6; opacity: 0.6; text-decoration: line-through; } 
+
+        /* Bottoni azioni lista */
+        .btn-action { color: white; border: none; width: 35px; height: 35px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 16px;}
+        .btn-edit { background-color: #f39c12; } /* Arancione per modifica */
+        .btn-log { background-color: #3498db; }
+        .btn-done { background-color: #27ae60; }
+        .btn-del { background-color: #e74c3c; }
+
+        /* Modale Storia */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 20px; border-radius: 8px; width: 500px; max-width: 90%; position: relative; }
+        .log-history { max-height: 250px; overflow-y: auto; background: #f8f9fa; padding: 10px; border: 1px solid #ddd; margin: 10px 0; font-size: 13px; }
+        .log-entry { border-bottom: 1px solid #eee; padding: 6px 0; display: flex; justify-content: space-between; }
+        .close-modal { position: absolute; top: 10px; right: 15px; font-size: 20px; cursor: pointer; color: #aaa; }
+        
+        .btn-del-log { background: transparent; border: none; cursor: pointer; color: #e74c3c; font-weight: bold; width: auto; padding: 0 5px;}
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🏛️ Gestore Pratiche Comune</h1>
+    
+    <div style="text-align: right; margin-bottom: 10px;">
+        <button onclick="richiediPermessoNotifiche()" id="btnNotifiche" style="background:#e67e22; color:white; border:none; padding: 5px 15px; width:auto;">🔔 Attiva Notifiche</button>
+    </div>
+
+    <!-- Area Inserimento / Modifica -->
+    <div class="input-group">
+        <div class="field-box" style="flex-grow: 2;">
+            <span class="input-label">Descrizione Attività / Pratica</span>
+            <input type="text" id="taskInput" placeholder="Es: Risposta Protocollo 123..." onkeypress="seInvio(event)">
+        </div>
+        
+        <div class="field-box" style="flex-grow: 1;">
+            <span class="input-label">📅 Data Scadenza (Opzionale)</span>
+            <input type="datetime-local" id="dateInput">
+        </div>
+
+        <button id="btnMain" onclick="gestisciSalvataggio()">+ AGGIUNGI</button>
+        <button id="btnCancel" onclick="annullaModifica()">ANNULLA</button>
+    </div>
+
+    <!-- Lista -->
+    <ul id="listaTask"></ul>
+</div>
+
+<!-- Modale Storia -->
+<div id="modalLog" class="modal">
+    <div class="modal-content">
+        <span class="close-modal" onclick="chiudiModal()">&times;</span>
+        <h3 id="modalTitle">Storico</h3>
+        <div class="log-history" id="logHistoryContainer"></div>
+        <div style="display:flex; gap:5px;">
+            <input type="text" id="newLogInput" placeholder="Nuova nota..." style="flex-grow:1;">
+            <button class="btn-action btn-log" onclick="aggiungiLog()" style="width: auto; padding: 0 15px;">Salva</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let tasks = JSON.parse(localStorage.getItem('comuneTasks')) || [];
+    let currentLogId = null; // ID per il log
+    let editingTaskId = null; // ID per la modifica del task principale
+
+    // Avvio
+    renderTasks();
+    setInterval(checkReminders, 60000); 
+
+    // --- FUNZIONE UNIFICATA AGGIUNGI / MODIFICA ---
+    function gestisciSalvataggio() {
+        const testo = document.getElementById('taskInput').value.trim();
+        const data = document.getElementById('dateInput').value;
+
+        if (testo === '') { alert("Inserisci una descrizione!"); return; }
+
+        if (editingTaskId) {
+            // MODALITÀ MODIFICA
+            const task = tasks.find(t => t.id === editingTaskId);
+            if (task) {
+                task.text = testo;
+                task.deadline = data;
+                alert("Pratica aggiornata!");
+            }
+            annullaModifica(); // Resetta il form
+        } else {
+            // MODALITÀ NUOVO INSERIMENTO
+            if (data === '' && !confirm("Salvare senza scadenza?")) return;
+            
+            const newTask = {
+                id: Date.now(),
+                text: testo,
+                deadline: data,
+                done: false,
+                logs: []
+            };
+            tasks.push(newTask);
+            
+            // Pulisci campi
+            document.getElementById('taskInput').value = '';
+            document.getElementById('dateInput').value = '';
+        }
+
+        salvaEaggiorna();
+    }
+
+    // --- ATTIVA MODALITÀ MODIFICA ---
+    function avviaModifica(id) {
+        const task = tasks.find(t => t.id === id);
+        if (!task) return;
+
+        // Porta i dati nei campi in alto
+        document.getElementById('taskInput').value = task.text;
+        document.getElementById('dateInput').value = task.deadline;
+        
+        // Cambia stato variabili
+        editingTaskId = id;
+
+        // Cambia aspetto bottone
+        const btn = document.getElementById('btnMain');
+        btn.innerText = "💾 AGGIORNA";
+        btn.style.backgroundColor = "#f39c12"; // Arancione
+        
+        // Mostra tasto annulla
+        document.getElementById('btnCancel').style.display = "block";
+        
+        // Scrolla in alto per far vedere che si sta modificando
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function annullaModifica() {
+        editingTaskId = null;
+        document.getElementById('taskInput').value = '';
+        document.getElementById('dateInput').value = '';
+        
+        const btn = document.getElementById('btnMain');
+        btn.innerText = "+ AGGIUNGI";
+        btn.style.backgroundColor = "#27ae60"; // Verde originale
+        
+        document.getElementById('btnCancel').style.display = "none";
+    }
+
+    // --- RENDER LISTA ---
+    function renderTasks() {
+        const lista = document.getElementById('listaTask');
+        lista.innerHTML = '';
+
+        tasks.sort((a, b) => {
+            if (a.done === b.done) {
+                const dA = a.deadline ? new Date(a.deadline) : new Date('2099-12-31');
+                const dB = b.deadline ? new Date(b.deadline) : new Date('2099-12-31');
+                return dA - dB;
+            }
+            return a.done ? 1 : -1;
+        });
+
+        tasks.forEach(task => {
+            const li = document.createElement('li');
+            
+            let statusClass = 'status-ok';
+            let scadenzaTesto = 'Nessuna scadenza';
+            
+            if (task.done) {
+                statusClass = 'status-done';
+                scadenzaTesto = 'Completata';
+            } else if (task.deadline) {
+                const now = new Date();
+                const scad = new Date(task.deadline);
+                const diffOre = (scad - now) / (1000 * 60 * 60);
+                
+                scadenzaTesto = scad.toLocaleString('it-IT', {weekday:'short', day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'});
+
+                if (diffOre < 0) statusClass = 'status-danger'; 
+                else if (diffOre < 48) statusClass = 'status-warning'; 
+            }
+
+            li.className = statusClass;
+            li.innerHTML = `
+                <div class="task-info">
+                    <span class="task-title">${task.text}</span>
+                    <span class="task-meta">
+                        ${task.deadline ? '⏳ Scade: ' + scadenzaTesto : '⚪ Nessuna scadenza'} 
+                        | 📝 Note: ${task.logs.length}
+                    </span>
+                </div>
+                <div class="task-actions">
+                    <button class="btn-action btn-edit" onclick="avviaModifica(${task.id})" title="Modifica dati">✏️</button>
+                    <button class="btn-action btn-log" onclick="apriLog(${task.id})" title="Note">📝</button>
+                    <button class="btn-action btn-done" onclick="toggleDone(${task.id})" title="Fatto">✅</button>
+                    <button class="btn-action btn-del" onclick="eliminaTask(${task.id})" title="Elimina">❌</button>
+                </div>
+            `;
+            lista.appendChild(li);
+        });
+    }
+
+    // --- GESTIONE LOG ---
+    function apriLog(id) {
+        currentLogId = id;
+        const task = tasks.find(t => t.id === id);
+        document.getElementById('modalTitle').innerText = task.text;
+        const container = document.getElementById('logHistoryContainer');
+        container.innerHTML = '';
+
+        if(task.logs.length === 0) container.innerHTML = '<div style="color:#999; padding:5px;">Nessuna nota.</div>';
+        
+        task.logs.map((log, index) => ({ log, originalIndex: index })).reverse().forEach(item => {
+            container.innerHTML += `
+                <div class="log-entry">
+                    <div style="flex-grow:1;"><b>${item.log.date}</b><br>${item.log.text}</div>
+                    <button class="btn-del-log" onclick="eliminaLog(${id}, ${item.originalIndex})">❌</button>
+                </div>`;
+        });
+        document.getElementById('modalLog').style.display = 'flex';
+    }
+
+    function aggiungiLog() {
+        const txt = document.getElementById('newLogInput').value;
+        if(!txt) return;
+        const task = tasks.find(t => t.id === currentLogId);
+        task.logs.push({ date: new Date().toLocaleString('it-IT'), text: txt });
+        salvaEaggiorna();
+        apriLog(currentLogId);
+        document.getElementById('newLogInput').value = '';
+    }
+
+    function eliminaLog(taskId, idx) {
+        if(confirm("Eliminare nota?")) {
+            tasks.find(t=>t.id===taskId).logs.splice(idx, 1);
+            salvaEaggiorna();
+            apriLog(taskId);
+        }
+    }
+
+    // --- UTILITIES ---
+    function toggleDone(id) {
+        const t = tasks.find(x=>x.id===id); t.done = !t.done; salvaEaggiorna();
+    }
+    
+    function eliminaTask(id) {
+        if(confirm("Eliminare definitivamente?")) { 
+            tasks = tasks.filter(t=>t.id!==id); 
+            // Se stavo modificando proprio questo, resetto il form
+            if (editingTaskId === id) annullaModifica();
+            salvaEaggiorna(); 
+        }
+    }
+
+    function salvaEaggiorna() {
+        localStorage.setItem('comuneTasks', JSON.stringify(tasks));
+        renderTasks();
+    }
+    
+    function chiudiModal() { document.getElementById('modalLog').style.display = 'none'; }
+    function seInvio(e) { if(e.key==='Enter') gestisciSalvataggio(); }
+
+    function richiediPermessoNotifiche() {
+        if(!("Notification" in window)) alert("Browser non supporta notifiche");
+        else Notification.requestPermission().then(p => { 
+            if(p==="granted") document.getElementById('btnNotifiche').style.display='none'; 
+        });
+    }
+
+    function checkReminders() {
+        if(Notification.permission!=="granted") return;
+        const now = new Date();
+        tasks.forEach(t => {
+            if(!t.done && t.deadline) {
+                const diff = (new Date(t.deadline) - now) / 60000;
+                if(diff > 0 && diff <= 30 && !t.notified) {
+                    new Notification("⚠️ Scadenza Imminente!", { body: t.text });
+                    const audio = new AudioContext(); // Beep semplice
+                    const o = audio.createOscillator();
+                    o.connect(audio.destination); o.start(); o.stop(audio.currentTime+0.5);
+                    t.notified = true; 
+                    salvaEaggiorna();
+                }
+            }
+        });
+    }
+    
+    window.onclick = e => { if(e.target == document.getElementById('modalLog')) chiudiModal(); }
+</script>
+</body>
+</html>
