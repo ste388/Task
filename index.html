@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Gestore Pratiche (Cloud + Export)</title>
+    <title>Gestore Pratiche (Vocale)</title>
     <style>
         /* --- STILE BASE --- */
         body { 
@@ -21,15 +21,19 @@
 
         /* INPUT PRINCIPALE */
         .input-group { 
-            display: flex; gap: 10px; margin-bottom: 20px; 
+            display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; 
             background: #eef2f5; padding: 15px; border-radius: 12px;
         }
         input, button { 
             width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; 
             font-size: 16px; box-sizing: border-box; 
         }
-        #btnMain { background-color: #27ae60; color: white; border: none; font-weight: bold; text-transform: uppercase; cursor: pointer; }
-        #btnCancel { background-color: #7f8c8d; color: white; border: none; font-weight: bold; display: none; margin-top: 10px; cursor: pointer; }
+        
+        /* BOTTONI FORM */
+        .btn-row { display: flex; gap: 10px; width: 100%; }
+        #btnMain { background-color: #27ae60; color: white; border: none; font-weight: bold; cursor: pointer; flex: 1; }
+        #btnMic { background-color: #8e44ad; color: white; border: none; font-weight: bold; cursor: pointer; flex: 1; transition: 0.3s;}
+        #btnCancel { background-color: #7f8c8d; color: white; border: none; font-weight: bold; display: none; cursor: pointer; }
 
         /* LISTA TASK */
         ul { list-style: none; padding: 0; margin: 0; }
@@ -61,7 +65,6 @@
             font-size: 18px; display: flex; align-items: center; justify-content: center; cursor: pointer;
         }
 
-        /* STATI E COLORI */
         .status-ok { border-left: 6px solid #27ae60; }
         .status-warning { border-left: 6px solid #f1c40f; background-color: #fffbf0; }
         .status-danger { border-left: 6px solid #e74c3c; background-color: #fff5f5; }
@@ -86,52 +89,41 @@
         }
         #modalTitle { margin-top: 0; margin-bottom: 15px; color: #2c3e50; font-size: 1.2rem;}
 
-        /* --- STORICO NOTE --- */
         .log-history { 
             flex: 1; overflow-y: auto; margin-bottom: 15px; 
             border: 1px solid #ddd; padding: 15px; border-radius: 8px;
             background: #fdfdfd; display: block; width: 100%; box-sizing: border-box;
         }
         
-        /* Modificata struttura della singola nota */
         .log-entry { 
             padding: 15px 0; border-bottom: 1px solid #eee; 
-            display: flex; flex-direction: column; /* Testo sopra, bottoni sotto */
-            width: 100%; box-sizing: border-box;
+            display: flex; flex-direction: column; width: 100%; box-sizing: border-box;
         }
         .log-entry:last-child { border-bottom: none; padding-bottom: 0;}
         
-        /* Container del testo largo 100% */
         .log-text-container { width: 100%; margin-bottom: 10px; }
         .log-date-label { color:#7f8c8d; font-size: 12px; font-weight: bold; margin-bottom: 5px; display: block;}
-        .log-text-content { 
-            font-size: 15px; line-height: 1.5; color: #222; 
-            width: 100%; word-wrap: break-word; 
-        }
+        .log-text-content { font-size: 15px; line-height: 1.5; color: #222; width: 100%; word-wrap: break-word; }
 
-        /* Nuova barra bottoni sotto la nota */
-        .log-actions-bar {
-            display: flex; justify-content: flex-end; /* Allineati a destra */
-            gap: 15px; width: 100%;
-        }
+        .log-actions-bar { display: flex; justify-content: flex-end; gap: 15px; width: 100%; }
 
         .btn-log-action {
             background: none; border: none; font-size: 13px; font-weight: bold; cursor: pointer; padding: 5px 10px; border-radius: 4px; display: flex; align-items: center; gap: 5px;
         }
         .btn-log-edit { color: #f39c12; }
-        .btn-log-edit:hover { background: #fef5e7; }
         .btn-log-del { color: #e74c3c; }
-        .btn-log-del:hover { background: #fcebeb; }
 
-        /* INSERIMENTO NOTA */
         .new-log-group { display: flex; flex-direction: column; gap: 10px; background: #eef2f5; padding: 15px; border-radius: 8px;}
         .new-log-group input { width: 100%; border: 1px solid #ccc; }
         .new-log-group button { width: 100%; padding: 12px; border-radius: 8px; color: white; border: none; font-weight: bold; background: #3498db; cursor: pointer;}
-        .new-log-group button:hover { background: #2980b9;}
 
-        /* MEDIA QUERY SMARTPHONE */
+        @media (min-width: 601px) {
+            .input-group { flex-direction: row; flex-wrap: wrap; align-items: flex-end; }
+            .input-group > input { flex: 1; }
+            .btn-row { width: auto; }
+        }
+
         @media (max-width: 600px) {
-            .input-group { flex-direction: column; gap: 10px; }
             .task-header { flex-direction: column; }
             .task-actions { width: 100%; justify-content: space-between; margin-top: 15px; padding-top: 10px; border-top: 1px solid #eee;}
             .btn-action { flex-grow: 1; margin: 0 3px; height: 45px; }
@@ -156,11 +148,15 @@
         </button>
     </div>
 
+    <!-- Area Inserimento con Tasto Vocale -->
     <div class="input-group">
         <input type="text" id="taskInput" placeholder="Cosa devi fare?" onkeypress="seInvio(event)">
         <input type="datetime-local" id="dateInput">
-        <button id="btnMain" onclick="gestisciSalvataggio()">AGGIUNGI</button>
-        <button id="btnCancel" onclick="annullaModifica()">ANNULLA</button>
+        <div class="btn-row">
+            <button id="btnMain" onclick="gestisciSalvataggio()">AGGIUNGI</button>
+            <button id="btnMic" onclick="avviaAscolto()">🎤 DETTA</button>
+        </div>
+        <button id="btnCancel" onclick="annullaModifica()">ANNULLA MODIFICA</button>
     </div>
 
     <div id="loading" style="text-align:center; color:#666; padding:20px;">⏳ Caricamento dati...</div>
@@ -171,19 +167,15 @@
 <div id="modalLog" class="modal">
     <div class="modal-content">
         <h3 id="modalTitle">Storico Aggiornamenti</h3>
-        
         <div class="log-history" id="logHistoryContainer"></div>
-        
-        <!-- Blocco inserimento modificato per gestire anche la modifica della nota -->
         <div class="new-log-group">
             <span id="logEditLabel" style="display:none; color:#f39c12; font-weight:bold; font-size:13px;">Stai modificando una nota:</span>
             <input type="text" id="newLogInput" placeholder="Scrivi un aggiornamento qui...">
             <div style="display:flex; gap:10px; width:100%;">
-                <button id="btnSalvaLog" onclick="salvaLog()">SALVA AGGIORNAMENTO</button>
+                <button id="btnSalvaLog" onclick="salvaLog()">SALVA</button>
                 <button id="btnAnnullaLog" onclick="annullaModificaLog()" style="display:none; background:#7f8c8d;">ANNULLA</button>
             </div>
         </div>
-        
         <button onclick="chiudiModal()" style="margin-top:15px; padding:12px; background: #e0e0e0; color: #333; font-weight: bold; border:none; border-radius:8px; cursor:pointer; width: 100%;">CHIUDI FINESTRA</button>
     </div>
 </div>
@@ -205,7 +197,7 @@
     let tasks = [];
     let currentLogId = null; 
     let editingTaskId = null; 
-    let editingLogIndex = null; // Variabile nuova per tracciare la modifica della nota
+    let editingLogIndex = null; 
 
     db.collection(collectionName).onSnapshot((querySnapshot) => {
         tasks = [];
@@ -224,6 +216,24 @@
 
     setInterval(cicloControllo, 60000); 
 
+    // --- FUNZIONE ESTERNA PER CREARE TASK NEL DB ---
+    function creaTaskDB(testo, scadenza = "") {
+        const dataOggi = new Date().toLocaleString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        db.collection(collectionName).add({
+            text: testo, 
+            deadline: scadenza, 
+            dataInserimento: dataOggi, 
+            timestamp: Date.now(), 
+            done: false, 
+            notified: false, 
+            logs: [],
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        }).then(() => {
+            document.getElementById('taskInput').value = '';
+            document.getElementById('dateInput').value = '';
+        });
+    }
+
     function gestisciSalvataggio() {
         const testo = document.getElementById('taskInput').value.trim();
         const data = document.getElementById('dateInput').value;
@@ -236,16 +246,84 @@
             }).then(() => annullaModifica());
         } else {
             if (data === '' && !confirm("Salvare senza scadenza?")) return;
-            const dataOggi = new Date().toLocaleString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-            db.collection(collectionName).add({
-                text: testo, deadline: data, dataInserimento: dataOggi, timestamp: Date.now(), done: false, notified: false, logs: [],
-                createdAt: firebase.firestore.FieldValue.serverTimestamp()
-            }).then(() => {
-                document.getElementById('taskInput').value = '';
-                document.getElementById('dateInput').value = '';
-            });
+            creaTaskDB(testo, data);
         }
     }
+
+    // ==========================================
+    // SISTEMA VOCALE (SPEECH RECOGNITION MODIFICATO)
+    // ==========================================
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let recognition;
+
+    if (SpeechRecognition) {
+        recognition = new SpeechRecognition();
+        recognition.lang = 'it-IT';
+        recognition.continuous = false; 
+
+        recognition.onstart = function() {
+            const btn = document.getElementById('btnMic');
+            btn.innerHTML = "🔴 ASCOLTO...";
+            btn.style.backgroundColor = "#e74c3c"; // Rosso durante l'ascolto
+        };
+
+        recognition.onresult = function(event) {
+            let trascrizione = event.results[0][0].transcript.trim();
+            let trascrizioneLower = trascrizione.toLowerCase();
+            let nuovoTitolo = trascrizione;
+
+            // Rimuove eventuali comandi pronunciati per abitudine dall'utente
+            const triggerWords = ["inserisci nuovo task", "inserisci task", "aggiungi nuovo task", "aggiungi task", "nuovo task"];
+            
+            for(let trigger of triggerWords) {
+                if(trascrizioneLower.startsWith(trigger)) {
+                    nuovoTitolo = trascrizione.substring(trigger.length).trim();
+                    break;
+                }
+            }
+
+            // Pulisce punteggiatura all'inizio (es. se rimuovendo la parola rimane ", chiamare sindaco")
+            nuovoTitolo = nuovoTitolo.replace(/^[,.:;]\s*/, '').trim();
+
+            if (nuovoTitolo === "") {
+                alert("Non ho sentito il titolo della pratica. Riprova.");
+            } else {
+                // Mette la prima lettera in maiuscolo
+                nuovoTitolo = nuovoTitolo.charAt(0).toUpperCase() + nuovoTitolo.slice(1);
+                
+                // SALVATAGGIO DIRETTO
+                creaTaskDB(nuovoTitolo, ""); 
+            }
+        };
+
+        recognition.onend = function() {
+            const btn = document.getElementById('btnMic');
+            btn.innerHTML = "🎤 DETTA";
+            btn.style.backgroundColor = "#8e44ad"; // Torna viola
+        };
+
+        recognition.onerror = function(event) {
+            if(event.error !== "no-speech") { // Evita alert se c'è solo silenzio
+                alert("Errore riconoscimento vocale: " + event.error);
+            }
+            const btn = document.getElementById('btnMic');
+            btn.innerHTML = "🎤 DETTA";
+            btn.style.backgroundColor = "#8e44ad";
+        };
+    }
+
+    function avviaAscolto() {
+        if (recognition) {
+            try {
+                recognition.start();
+            } catch(e) {
+                console.log("Già in ascolto");
+            }
+        } else {
+            alert("Il tuo browser non supporta il microfono per questa funzione. Usa Chrome.");
+        }
+    }
+    // ==========================================
 
     function cicloControllo() {
         renderTasks(); 
@@ -333,17 +411,20 @@
         const task = tasks.find(t => t.id === id); if (!task) return;
         document.getElementById('taskInput').value = task.text; document.getElementById('dateInput').value = task.deadline || '';
         editingTaskId = id;
-        const btn = document.getElementById('btnMain'); btn.innerText = "SALVA MODIFICA"; btn.style.backgroundColor = "#f39c12"; 
+        document.getElementById('btnMain').innerText = "SALVA MODIFICA"; 
+        document.getElementById('btnMain').style.backgroundColor = "#f39c12"; 
+        document.getElementById('btnMic').style.display = "none"; 
         document.getElementById('btnCancel').style.display = "block"; window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     function annullaModifica() {
         editingTaskId = null; document.getElementById('taskInput').value = ''; document.getElementById('dateInput').value = '';
-        const btn = document.getElementById('btnMain'); btn.innerText = "AGGIUNGI"; btn.style.backgroundColor = "#27ae60"; 
+        document.getElementById('btnMain').innerText = "AGGIUNGI"; 
+        document.getElementById('btnMain').style.backgroundColor = "#27ae60"; 
+        document.getElementById('btnMic').style.display = "block"; 
         document.getElementById('btnCancel').style.display = "none";
     }
 
-    // --- GESTIONE NOTE (MODIFICATO) ---
     function apriLog(id, showModal) {
         currentLogId = id;
         const task = tasks.find(t => t.id === id);
@@ -352,13 +433,12 @@
         document.getElementById('modalTitle').innerText = task.text;
         const container = document.getElementById('logHistoryContainer');
         container.innerHTML = '';
-        annullaModificaLog(); // Resetta eventuali modifiche in corso se riapre o aggiorna
+        annullaModificaLog(); 
 
         const logs = task.logs || [];
         if(logs.length === 0) {
             container.innerHTML = '<div style="color:#999; text-align:center; padding: 20px;">Nessun aggiornamento registrato.</div>';
         } else {
-            // Renderizziamo i log con i bottoni SOTTO al testo
             logs.map((log, index) => ({ log, originalIndex: index })).reverse().forEach(item => {
                 container.innerHTML += `
                     <div class="log-entry">
@@ -366,7 +446,6 @@
                             <span class="log-date-label">${item.log.date}</span>
                             <div class="log-text-content">${item.log.text}</div>
                         </div>
-                        
                         <div class="log-actions-bar">
                             <button class="btn-log-action btn-log-edit" onclick="preparaModificaLog(${item.originalIndex}, \`${item.log.text.replace(/'/g, "\\'")}\`)">✏️ Modifica</button>
                             <button class="btn-log-action btn-log-del" onclick="eliminaLog('${id}', ${item.originalIndex})">🗑️ Elimina</button>
@@ -374,30 +453,22 @@
                     </div>`;
             });
         }
-        
         if(showModal) document.getElementById('modalLog').style.display = 'flex';
     }
 
     function salvaLog() {
         const txt = document.getElementById('newLogInput').value.trim();
         if(!txt) { alert("Scrivi qualcosa prima di salvare."); return; }
-        
         const taskRef = db.collection(collectionName).doc(currentLogId);
 
         if (editingLogIndex !== null) {
-            // Stiamo modificando una nota esistente
             const task = tasks.find(t => t.id === currentLogId);
             const newLogs = [...task.logs];
-            newLogs[editingLogIndex].text = txt; // Aggiorno solo il testo, mantengo la data originale
-            
-            taskRef.update({ logs: newLogs }).then(() => {
-                annullaModificaLog();
-            });
+            newLogs[editingLogIndex].text = txt; 
+            taskRef.update({ logs: newLogs }).then(() => annullaModificaLog());
         } else {
-            // Nuova nota
             const dataOggi = new Date().toLocaleString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
             const newLog = { date: dataOggi, text: txt };
-            
             taskRef.update({ logs: firebase.firestore.FieldValue.arrayUnion(newLog) }).then(() => {
                 document.getElementById('newLogInput').value = '';
                 document.getElementById('logHistoryContainer').scrollTop = 0;
@@ -406,34 +477,26 @@
     }
 
     function preparaModificaLog(index, testoAttuale) {
-        editingLogIndex = index;
-        document.getElementById('newLogInput').value = testoAttuale;
-        document.getElementById('btnSalvaLog').innerText = "AGGIORNA NOTA";
-        document.getElementById('btnSalvaLog').style.backgroundColor = "#f39c12";
-        document.getElementById('btnAnnullaLog').style.display = "block";
-        document.getElementById('logEditLabel').style.display = "block";
+        editingLogIndex = index; document.getElementById('newLogInput').value = testoAttuale;
+        document.getElementById('btnSalvaLog').innerText = "AGGIORNA NOTA"; document.getElementById('btnSalvaLog').style.backgroundColor = "#f39c12";
+        document.getElementById('btnAnnullaLog').style.display = "block"; document.getElementById('logEditLabel').style.display = "block";
         document.getElementById('newLogInput').focus();
     }
 
     function annullaModificaLog() {
-        editingLogIndex = null;
-        document.getElementById('newLogInput').value = '';
-        document.getElementById('btnSalvaLog').innerText = "SALVA";
-        document.getElementById('btnSalvaLog').style.backgroundColor = "#3498db";
-        document.getElementById('btnAnnullaLog').style.display = "none";
-        document.getElementById('logEditLabel').style.display = "none";
+        editingLogIndex = null; document.getElementById('newLogInput').value = '';
+        document.getElementById('btnSalvaLog').innerText = "SALVA"; document.getElementById('btnSalvaLog').style.backgroundColor = "#3498db";
+        document.getElementById('btnAnnullaLog').style.display = "none"; document.getElementById('logEditLabel').style.display = "none";
     }
 
     function eliminaLog(taskId, idx) {
         if(confirm("Vuoi davvero cancellare questo aggiornamento?")) {
             const task = tasks.find(t => t.id === taskId);
-            const newLogs = [...task.logs];
-            newLogs.splice(idx, 1);
+            const newLogs = [...task.logs]; newLogs.splice(idx, 1);
             db.collection(collectionName).doc(taskId).update({ logs: newLogs });
         }
     }
 
-    // --- ALTRE FUNZIONI UTILI ---
     function toggleDone(id, currentStatus) { db.collection(collectionName).doc(id).update({ done: !currentStatus }); }
     function eliminaTask(id) { if(confirm("Vuoi davvero eliminare questa pratica e tutti i suoi aggiornamenti?")) { db.collection(collectionName).doc(id).delete(); if (editingTaskId === id) annullaModifica(); } }
     
@@ -445,10 +508,7 @@
             let lastLogText = ""; let lastLogDate = "";
             if (t.logs && t.logs.length > 0) { const last = t.logs[t.logs.length - 1]; lastLogText = last.text || ""; lastLogDate = last.date || ""; }
             let dataIns = t.dataInserimento || (new Date().toLocaleString('it-IT', {day: '2-digit', month: '2-digit', year: 'numeric'}) + " (Stimata)");
-            return {
-                "Descrizione Pratica": t.text || "", "Data Inserimento": dataIns, "Scadenza": t.deadline ? new Date(t.deadline).toLocaleString('it-IT') : "Nessuna",
-                "Stato": t.done ? "Completata" : "Aperta", "Note (Num)": t.logs ? t.logs.length : 0, "Data Ultima Nota": lastLogDate, "Testo Ultima Nota": lastLogText
-            };
+            return { "Descrizione Pratica": t.text || "", "Data Inserimento": dataIns, "Scadenza": t.deadline ? new Date(t.deadline).toLocaleString('it-IT') : "Nessuna", "Stato": t.done ? "Completata" : "Aperta", "Note (Num)": t.logs ? t.logs.length : 0, "Data Ultima Nota": lastLogDate, "Testo Ultima Nota": lastLogText };
         });
         const ws = XLSX.utils.json_to_sheet(rows); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Pratiche");
         const oggi = new Date(); const yyyy = oggi.getFullYear(); const mm = String(oggi.getMonth() + 1).padStart(2, "0"); const dd = String(oggi.getDate()).padStart(2, "0");
