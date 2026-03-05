@@ -216,7 +216,6 @@
 
     setInterval(cicloControllo, 60000); 
 
-    // --- FUNZIONE ESTERNA PER CREARE TASK NEL DB ---
     function creaTaskDB(testo, scadenza = "") {
         const dataOggi = new Date().toLocaleString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
         db.collection(collectionName).add({
@@ -241,8 +240,9 @@
         if (testo === '') { alert("Inserisci il nome!"); return; }
 
         if (editingTaskId) {
+            // Aggiorniamo anche il timestamp così schizza in cima!
             db.collection(collectionName).doc(editingTaskId).update({
-                text: testo, deadline: data, notified: false 
+                text: testo, deadline: data, notified: false, timestamp: Date.now() 
             }).then(() => annullaModifica());
         } else {
             if (data === '' && !confirm("Salvare senza scadenza?")) return;
@@ -251,7 +251,7 @@
     }
 
     // ==========================================
-    // SISTEMA VOCALE (SPEECH RECOGNITION MODIFICATO)
+    // SISTEMA VOCALE
     // ==========================================
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     let recognition;
@@ -264,7 +264,7 @@
         recognition.onstart = function() {
             const btn = document.getElementById('btnMic');
             btn.innerHTML = "🔴 ASCOLTO...";
-            btn.style.backgroundColor = "#e74c3c"; // Rosso durante l'ascolto
+            btn.style.backgroundColor = "#e74c3c"; 
         };
 
         recognition.onresult = function(event) {
@@ -272,7 +272,6 @@
             let trascrizioneLower = trascrizione.toLowerCase();
             let nuovoTitolo = trascrizione;
 
-            // Rimuove eventuali comandi pronunciati per abitudine dall'utente
             const triggerWords = ["inserisci nuovo task", "inserisci task", "aggiungi nuovo task", "aggiungi task", "nuovo task"];
             
             for(let trigger of triggerWords) {
@@ -282,16 +281,12 @@
                 }
             }
 
-            // Pulisce punteggiatura all'inizio (es. se rimuovendo la parola rimane ", chiamare sindaco")
             nuovoTitolo = nuovoTitolo.replace(/^[,.:;]\s*/, '').trim();
 
             if (nuovoTitolo === "") {
                 alert("Non ho sentito il titolo della pratica. Riprova.");
             } else {
-                // Mette la prima lettera in maiuscolo
                 nuovoTitolo = nuovoTitolo.charAt(0).toUpperCase() + nuovoTitolo.slice(1);
-                
-                // SALVATAGGIO DIRETTO
                 creaTaskDB(nuovoTitolo, ""); 
             }
         };
@@ -299,11 +294,11 @@
         recognition.onend = function() {
             const btn = document.getElementById('btnMic');
             btn.innerHTML = "🎤 DETTA";
-            btn.style.backgroundColor = "#8e44ad"; // Torna viola
+            btn.style.backgroundColor = "#8e44ad"; 
         };
 
         recognition.onerror = function(event) {
-            if(event.error !== "no-speech") { // Evita alert se c'è solo silenzio
+            if(event.error !== "no-speech") { 
                 alert("Errore riconoscimento vocale: " + event.error);
             }
             const btn = document.getElementById('btnMic');
@@ -313,47 +308,56 @@
     }
 
     function avviaAscolto() {
-        if (recognition) {
-            try {
-                recognition.start();
-            } catch(e) {
-                console.log("Già in ascolto");
-            }
-        } else {
-            alert("Il tuo browser non supporta il microfono per questa funzione. Usa Chrome.");
-        }
+        if (recognition) { try { recognition.start(); } catch(e) { console.log("Già in ascolto"); } } 
+        else { alert("Il tuo browser non supporta il microfono. Usa Chrome."); }
     }
+
     // ==========================================
-
-    function cicloControllo() {
-        renderTasks(); 
-        const now = new Date(); let suona = false;
-        tasks.forEach(t => {
-            if(!t.done && t.deadline) {
-                const diff = (new Date(t.deadline) - now) / 60000;
-                if(diff > 0 && diff <= 30 && !t.notified) {
-                    suona = true; db.collection(collectionName).doc(t.id).update({ notified: true });
-                }
-            }
-        });
-        if(suona) playBeep();
-    }
-
+    // RENDER TASK (ORDINAMENTO INTELLIGENTE)
+    // ==========================================
     function renderTasks() {
         const lista = document.getElementById('listaTask');
         lista.innerHTML = '';
 
         tasks.sort((a, b) => {
+            // Seleziona prima quelle da completare, poi le completate
             if (a.done !== b.done) return a.done ? 1 : -1;
+            
+            // FUNZIONE PER TROVARE LA DATA PIÙ RECENTE ASSOLUTA (Creazione vs. Ultima Nota)
             function getSortTime(t) {
-                if (t.timestamp) return t.timestamp; 
-                if (t.createdAt && typeof t.createdAt.toMillis === 'function') return t.createdAt.toMillis();
-                if (t.dataInserimento) {
-                    const match = t.dataInserimento.match(/(\d{2})\/(\d{2})\/(\d{4}),\s?(\d{2}):(\d{2})/);
-                    if (match) return new Date(match[3], match[2]-1, match[1], match[4], match[5]).getTime();
+                let baseTime = 0;
+                if (t.timestamp) {
+                    baseTime = t.timestamp; 
+                } else if (t.createdAt && typeof t.createdAt.toMillis === 'function') {
+                    baseTime = t.createdAt.toMillis();
                 }
-                return 0; 
+                
+                // Funzione per tradurre la data scritta italiana in un valore numerico reale
+                function parseItalianDate(str) {
+                    if (!str) return 0;
+                    const match = String(str).match(/(\d{2})\/(\d{2})\/(\d{4})(?:[, ]+(\d{2}):(\d{2}))?/);
+                    if (match) return new Date(match[3], match[2]-1, match[1], match[4] || 0, match[5] || 0).getTime();
+                    return 0;
+                }
+
+                if (baseTime === 0 && t.dataInserimento) {
+                    baseTime = parseItalianDate(t.dataInserimento);
+                }
+
+                // Cerca se esiste una nota più recente della creazione base
+                let maxLogTime = 0;
+                if (t.logs && t.logs.length > 0) {
+                    t.logs.forEach(log => {
+                        let lTime = parseItalianDate(log.date);
+                        if (lTime > maxLogTime) maxLogTime = lTime;
+                    });
+                }
+
+                // Restituisce il valore più alto tra l'aggiornamento base e l'ultima nota
+                return Math.max(baseTime, maxLogTime);
             }
+            
+            // Ordina dalla più recente aggiornata alla più vecchia
             return getSortTime(b) - getSortTime(a);
         });
 
@@ -465,11 +469,13 @@
             const task = tasks.find(t => t.id === currentLogId);
             const newLogs = [...task.logs];
             newLogs[editingLogIndex].text = txt; 
-            taskRef.update({ logs: newLogs }).then(() => annullaModificaLog());
+            // Aggiorniamo anche il timestamp così schizza in cima!
+            taskRef.update({ logs: newLogs, timestamp: Date.now() }).then(() => annullaModificaLog());
         } else {
             const dataOggi = new Date().toLocaleString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
             const newLog = { date: dataOggi, text: txt };
-            taskRef.update({ logs: firebase.firestore.FieldValue.arrayUnion(newLog) }).then(() => {
+            // Aggiorniamo timestamp qui
+            taskRef.update({ logs: firebase.firestore.FieldValue.arrayUnion(newLog), timestamp: Date.now() }).then(() => {
                 document.getElementById('newLogInput').value = '';
                 document.getElementById('logHistoryContainer').scrollTop = 0;
             });
@@ -493,14 +499,33 @@
         if(confirm("Vuoi davvero cancellare questo aggiornamento?")) {
             const task = tasks.find(t => t.id === taskId);
             const newLogs = [...task.logs]; newLogs.splice(idx, 1);
-            db.collection(collectionName).doc(taskId).update({ logs: newLogs });
+            // Aggiorno il timestamp anche se cancello, così riflette l'ultima interazione
+            db.collection(collectionName).doc(taskId).update({ logs: newLogs, timestamp: Date.now() });
         }
     }
 
-    function toggleDone(id, currentStatus) { db.collection(collectionName).doc(id).update({ done: !currentStatus }); }
+    function toggleDone(id, currentStatus) { 
+        // Aggiorna lo stato e anche il timestamp
+        db.collection(collectionName).doc(id).update({ done: !currentStatus, timestamp: Date.now() }); 
+    }
+    
     function eliminaTask(id) { if(confirm("Vuoi davvero eliminare questa pratica e tutti i suoi aggiornamenti?")) { db.collection(collectionName).doc(id).delete(); if (editingTaskId === id) annullaModifica(); } }
     
     function playBeep() { try { const ctx = new (window.AudioContext||window.webkitAudioContext)(); const o = ctx.createOscillator(); o.type='sine'; o.frequency.setValueAtTime(880, ctx.currentTime); o.connect(ctx.destination); o.start(); o.stop(ctx.currentTime+0.5); } catch(e) {} }
+
+    function cicloControllo() {
+        renderTasks(); 
+        const now = new Date(); let suona = false;
+        tasks.forEach(t => {
+            if(!t.done && t.deadline) {
+                const diff = (new Date(t.deadline) - now) / 60000;
+                if(diff > 0 && diff <= 30 && !t.notified) {
+                    suona = true; db.collection(collectionName).doc(t.id).update({ notified: true });
+                }
+            }
+        });
+        if(suona) playBeep();
+    }
 
     function esportaXLS() {
         if (!tasks || tasks.length === 0) { alert("Non ci sono pratiche."); return; }
