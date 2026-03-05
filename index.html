@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Gestore Pratiche (Vocale)</title>
-	
-	<!-- Collega il Manifest -->
-	<link rel="manifest" href="./manifest.json">
-	<meta name="theme-color" content="#2c3e50">
-	
+    <title>Gestore Pratiche</title>
+    
+    <!-- === COLLEGAMENTO PWA (Manifest e Colore Tema) === -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2c3e50">
+    <link rel="apple-touch-icon" href="icons/192.png">
+
     <style>
         /* --- STILE BASE --- */
         body { 
@@ -245,7 +246,6 @@
         if (testo === '') { alert("Inserisci il nome!"); return; }
 
         if (editingTaskId) {
-            // Aggiorniamo anche il timestamp così schizza in cima!
             db.collection(collectionName).doc(editingTaskId).update({
                 text: testo, deadline: data, notified: false, timestamp: Date.now() 
             }).then(() => annullaModifica());
@@ -325,10 +325,8 @@
         lista.innerHTML = '';
 
         tasks.sort((a, b) => {
-            // Seleziona prima quelle da completare, poi le completate
             if (a.done !== b.done) return a.done ? 1 : -1;
             
-            // FUNZIONE PER TROVARE LA DATA PIÙ RECENTE ASSOLUTA (Creazione vs. Ultima Nota)
             function getSortTime(t) {
                 let baseTime = 0;
                 if (t.timestamp) {
@@ -337,7 +335,6 @@
                     baseTime = t.createdAt.toMillis();
                 }
                 
-                // Funzione per tradurre la data scritta italiana in un valore numerico reale
                 function parseItalianDate(str) {
                     if (!str) return 0;
                     const match = String(str).match(/(\d{2})\/(\d{2})\/(\d{4})(?:[, ]+(\d{2}):(\d{2}))?/);
@@ -349,7 +346,6 @@
                     baseTime = parseItalianDate(t.dataInserimento);
                 }
 
-                // Cerca se esiste una nota più recente della creazione base
                 let maxLogTime = 0;
                 if (t.logs && t.logs.length > 0) {
                     t.logs.forEach(log => {
@@ -358,11 +354,9 @@
                     });
                 }
 
-                // Restituisce il valore più alto tra l'aggiornamento base e l'ultima nota
                 return Math.max(baseTime, maxLogTime);
             }
             
-            // Ordina dalla più recente aggiornata alla più vecchia
             return getSortTime(b) - getSortTime(a);
         });
 
@@ -474,12 +468,10 @@
             const task = tasks.find(t => t.id === currentLogId);
             const newLogs = [...task.logs];
             newLogs[editingLogIndex].text = txt; 
-            // Aggiorniamo anche il timestamp così schizza in cima!
             taskRef.update({ logs: newLogs, timestamp: Date.now() }).then(() => annullaModificaLog());
         } else {
             const dataOggi = new Date().toLocaleString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
             const newLog = { date: dataOggi, text: txt };
-            // Aggiorniamo timestamp qui
             taskRef.update({ logs: firebase.firestore.FieldValue.arrayUnion(newLog), timestamp: Date.now() }).then(() => {
                 document.getElementById('newLogInput').value = '';
                 document.getElementById('logHistoryContainer').scrollTop = 0;
@@ -504,13 +496,11 @@
         if(confirm("Vuoi davvero cancellare questo aggiornamento?")) {
             const task = tasks.find(t => t.id === taskId);
             const newLogs = [...task.logs]; newLogs.splice(idx, 1);
-            // Aggiorno il timestamp anche se cancello, così riflette l'ultima interazione
             db.collection(collectionName).doc(taskId).update({ logs: newLogs, timestamp: Date.now() });
         }
     }
 
     function toggleDone(id, currentStatus) { 
-        // Aggiorna lo stato e anche il timestamp
         db.collection(collectionName).doc(id).update({ done: !currentStatus, timestamp: Date.now() }); 
     }
     
@@ -551,19 +541,19 @@
     window.onclick = e => { if(e.target == document.getElementById('modalLog')) chiudiModal(); }
 </script>
 
+<!-- === SCRIPT SERVICE WORKER PWA === -->
 <script>
-  // Registra il Service Worker
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./service-worker.js')
-        .then(registration => {
-          console.log('Service Worker registrato con successo:', registration.scope);
-        })
-        .catch(error => {
-          console.log('Registrazione Service Worker fallita:', error);
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('service-worker.js')
+                .then(registration => {
+                    console.log('Service Worker registrato con successo, scopo:', registration.scope);
+                })
+                .catch(error => {
+                    console.log('Registrazione Service Worker fallita:', error);
+                });
         });
-    });
-  }
+    }
 </script>
 
 </body>
