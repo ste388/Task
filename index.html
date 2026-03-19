@@ -6,7 +6,7 @@
     <title>Gestore Pratiche</title>
     
     <!-- === COLLEGAMENTO PWA === -->
-    <link rel="manifest" href="./manifest.webmanifest>
+    <link rel="manifest" href="manifest.webmanifest">
     <meta name="theme-color" content="#2c3e50">
     <link rel="apple-touch-icon" href="icons/192.png">
 
@@ -32,6 +32,26 @@
             margin-bottom: 20px; cursor: pointer; text-transform: uppercase;
         }
         #btnInstallPwa:hover { background-color: #3498db; }
+
+        /* --- EXPORT E RICERCA (SEPARATI) --- */
+        #exportContainer {
+            text-align: right; margin-bottom: 10px;
+        }
+        #btnExportPCDoc {
+            background-color: #16a085; color: white; border: none; padding: 8px 15px; 
+            border-radius: 6px; font-size: 14px; cursor: pointer; width: auto; font-weight: bold;
+        }
+        #btnExportPCDoc:hover { background-color: #1abc9c; }
+
+        /* BARRA DI RICERCA */
+        .search-container {
+            margin-bottom: 15px; width: 100%;
+        }
+        #searchInput {
+            width: 100%; padding: 12px; border: 1px solid #ccc; 
+            border-radius: 8px; font-size: 16px; box-sizing: border-box; background: #fff;
+            -webkit-appearance: searchfield; /* Forza l'icona "X" nativa nei browser moderni */
+        }
 
         /* INPUT PRINCIPALE */
         .input-group { 
@@ -86,6 +106,7 @@
         .new-log-group input { width: 100%; border: 1px solid #ccc; }
         .new-log-group button { width: 100%; padding: 12px; border-radius: 8px; color: white; border: none; font-weight: bold; background: #3498db; cursor: pointer;}
 
+        /* MEDIA QUERIES (RESPONSIVE) */
         @media (min-width: 601px) {
             .input-group { flex-direction: row; flex-wrap: wrap; align-items: flex-end; }
             .input-group > input { flex: 1; }
@@ -95,8 +116,8 @@
             .task-header { flex-direction: column; }
             .task-actions { width: 100%; justify-content: space-between; margin-top: 15px; padding-top: 10px; border-top: 1px solid #eee;}
             .btn-action { flex-grow: 1; margin: 0 3px; height: 45px; }
-            #exportContainer { display: none !important; }
             .modal-content { padding: 15px; }
+            #exportContainer { display: none !important; }
         }
     </style>
 
@@ -109,11 +130,17 @@
 <div class="container">
     <h1>🏛️ Pratiche Comune</h1>
 
-    <!-- Tasto per installare l'app nativa (appare solo se è possibile) -->
+    <!-- Tasto per installare l'app nativa -->
     <button id="btnInstallPwa">📲 INSTALLA L'APP SUL TELEFONO</button>
 
-    <div id="exportContainer" style="text-align:right; margin-bottom:10px;">
-        <button onclick="esportaXLS()" style="background:#16a085; color:white; border:none; padding:8px 15px; border-radius:6px; font-size:14px; cursor:pointer; width:auto;">⬇️ Esporta in XLS</button>
+    <!-- EXPORT -->
+    <div id="exportContainer">
+        <button id="btnExportPCDoc" onclick="esportaXLS()">⬇️ Esporta in XLS</button>
+    </div>
+
+    <!-- RICERCA (Con X nativa del browser) -->
+    <div class="search-container">
+        <input type="search" id="searchInput" placeholder="🔍 Cerca pratica o nota..." oninput="renderTasks()">
     </div>
 
     <!-- Area Inserimento con Tasto Vocale -->
@@ -152,32 +179,23 @@
     // --- GESTIONE INSTALLAZIONE PWA ---
     let deferredPrompt;
     const btnInstall = document.getElementById('btnInstallPwa');
-
-    // Il browser rileva che ci sono tutti i requisiti (HTTPS, Manifest, Service Worker)
     window.addEventListener('beforeinstallprompt', (e) => {
-        e.preventDefault(); // Blocca il prompt automatico
-        deferredPrompt = e; // Salva l'evento per dopo
-        btnInstall.style.display = 'block'; // Mostra il bottone "Installa App"
+        e.preventDefault(); 
+        deferredPrompt = e; 
+        btnInstall.style.display = 'block'; 
     });
-
     btnInstall.addEventListener('click', async () => {
         if (deferredPrompt) {
-            deferredPrompt.prompt(); // Mostra il prompt nativo del telefono
+            deferredPrompt.prompt(); 
             const { outcome } = await deferredPrompt.userChoice;
-            if (outcome === 'accepted') {
-                console.log('App installata');
-            }
+            if (outcome === 'accepted') { console.log('App installata'); }
             deferredPrompt = null;
-            btnInstall.style.display = 'none'; // Nasconde il bottone
+            btnInstall.style.display = 'none'; 
         }
     });
+    window.addEventListener('appinstalled', () => { btnInstall.style.display = 'none'; });
 
-    // Se l'app è già installata
-    window.addEventListener('appinstalled', () => {
-        btnInstall.style.display = 'none';
-    });
-    // ------------------------------------
-
+    // --- FIREBASE CONFIG ---
     const firebaseConfig = {
       apiKey: "AIzaSyAL97hOMZQ1-Jr6pFUpu23QiJRuLbrUtcg",
       authDomain: "task-27d22.firebaseapp.com",
@@ -237,8 +255,19 @@
     function avviaAscolto() { if (recognition) { try { recognition.start(); } catch(e) { console.log("Già in ascolto"); } } else { alert("Il tuo browser non supporta il microfono. Usa Chrome."); } }
 
     function renderTasks() {
-        const lista = document.getElementById('listaTask'); lista.innerHTML = '';
-        tasks.sort((a, b) => {
+        const lista = document.getElementById('listaTask'); 
+        lista.innerHTML = '';
+        
+        const testoRicerca = document.getElementById('searchInput') ? document.getElementById('searchInput').value.toLowerCase().trim() : '';
+
+        let taskVisualizzati = tasks.filter(t => {
+            if (testoRicerca === '') return true; 
+            let matchTitolo = t.text && t.text.toLowerCase().includes(testoRicerca);
+            let matchNote = t.logs && t.logs.some(log => log.text && log.text.toLowerCase().includes(testoRicerca));
+            return matchTitolo || matchNote;
+        });
+
+        taskVisualizzati.sort((a, b) => {
             if (a.done !== b.done) return a.done ? 1 : -1;
             function getSortTime(t) {
                 let baseTime = 0; if (t.timestamp) { baseTime = t.timestamp; } else if (t.createdAt && typeof t.createdAt.toMillis === 'function') { baseTime = t.createdAt.toMillis(); }
@@ -250,7 +279,7 @@
             return getSortTime(b) - getSortTime(a);
         });
 
-        tasks.forEach(task => {
+        taskVisualizzati.forEach(task => {
             const li = document.createElement('li'); let statusClass = 'status-ok'; let scadenzaTesto = 'Nessuna';
             if (task.done) { statusClass = 'status-done'; scadenzaTesto = 'Fatto'; } else if (task.deadline) { const now = new Date(); const scad = new Date(task.deadline); const diffOre = (scad - now) / (1000 * 60 * 60); scadenzaTesto = scad.toLocaleString('it-IT', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'}); if (diffOre < 0) statusClass = 'status-danger'; else if (diffOre < 48) statusClass = 'status-warning'; }
             let dataCreazione = task.dataInserimento || (new Date().toLocaleString('it-IT', {day: '2-digit', month: '2-digit', year: 'numeric'}) + " (Stimata)"); let lastLogHtml = ''; let logsCount = task.logs ? task.logs.length : 0;
@@ -273,7 +302,28 @@
     function eliminaTask(id) { if(confirm("Vuoi eliminare questa pratica?")) { db.collection(collectionName).doc(id).delete(); if (editingTaskId === id) annullaModifica(); } }
     function playBeep() { try { const ctx = new (window.AudioContext||window.webkitAudioContext)(); const o = ctx.createOscillator(); o.type='sine'; o.frequency.setValueAtTime(880, ctx.currentTime); o.connect(ctx.destination); o.start(); o.stop(ctx.currentTime+0.5); } catch(e) {} }
     function cicloControllo() { renderTasks(); const now = new Date(); let suona = false; tasks.forEach(t => { if(!t.done && t.deadline) { const diff = (new Date(t.deadline) - now) / 60000; if(diff > 0 && diff <= 30 && !t.notified) { suona = true; db.collection(collectionName).doc(t.id).update({ notified: true }); } } }); if(suona) playBeep(); }
-    function esportaXLS() { if (!tasks || tasks.length === 0) { alert("Non ci sono pratiche."); return; } const rows = tasks.map(t => { let lastLogText = ""; let lastLogDate = ""; if (t.logs && t.logs.length > 0) { const last = t.logs[t.logs.length - 1]; lastLogText = last.text || ""; lastLogDate = last.date || ""; } let dataIns = t.dataInserimento || (new Date().toLocaleString('it-IT', {day: '2-digit', month: '2-digit', year: 'numeric'}) + " (Stimata)"); return { "Descrizione Pratica": t.text || "", "Data Inserimento": dataIns, "Scadenza": t.deadline ? new Date(t.deadline).toLocaleString('it-IT') : "Nessuna", "Stato": t.done ? "Completata" : "Aperta", "Note (Num)": t.logs ? t.logs.length : 0, "Data Ultima Nota": lastLogDate, "Testo Ultima Nota": lastLogText }; }); const ws = XLSX.utils.json_to_sheet(rows); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Pratiche"); const oggi = new Date(); const yyyy = oggi.getFullYear(); const mm = String(oggi.getMonth() + 1).padStart(2, "0"); const dd = String(oggi.getDate()).padStart(2, "0"); XLSX.writeFile(wb, `pratiche_comune_${yyyy}${mm}${dd}.xlsx`); }
+    
+    function esportaXLS() { 
+        if (!tasks || tasks.length === 0) { alert("Non ci sono pratiche."); return; } 
+        const testoRicerca = document.getElementById('searchInput') ? document.getElementById('searchInput').value.toLowerCase().trim() : '';
+        let taskDaEsportare = tasks.filter(t => {
+            if (testoRicerca === '') return true;
+            let matchTitolo = t.text && t.text.toLowerCase().includes(testoRicerca);
+            let matchNote = t.logs && t.logs.some(log => log.text && log.text.toLowerCase().includes(testoRicerca));
+            return matchTitolo || matchNote;
+        });
+
+        const rows = taskDaEsportare.map(t => { 
+            let lastLogText = ""; let lastLogDate = ""; 
+            if (t.logs && t.logs.length > 0) { const last = t.logs[t.logs.length - 1]; lastLogText = last.text || ""; lastLogDate = last.date || ""; } 
+            let dataIns = t.dataInserimento || (new Date().toLocaleString('it-IT', {day: '2-digit', month: '2-digit', year: 'numeric'}) + " (Stimata)"); 
+            return { "Descrizione Pratica": t.text || "", "Data Inserimento": dataIns, "Scadenza": t.deadline ? new Date(t.deadline).toLocaleString('it-IT') : "Nessuna", "Stato": t.done ? "Completata" : "Aperta", "Note (Num)": t.logs ? t.logs.length : 0, "Data Ultima Nota": lastLogDate, "Testo Ultima Nota": lastLogText }; 
+        }); 
+        const ws = XLSX.utils.json_to_sheet(rows); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Pratiche"); 
+        const oggi = new Date(); const yyyy = oggi.getFullYear(); const mm = String(oggi.getMonth() + 1).padStart(2, "0"); const dd = String(oggi.getDate()).padStart(2, "0"); 
+        XLSX.writeFile(wb, `pratiche_comune_${yyyy}${mm}${dd}.xlsx`); 
+    }
+    
     function chiudiModal() { document.getElementById('modalLog').style.display = 'none'; annullaModificaLog(); }
     function seInvio(e) { if(e.key==='Enter') gestisciSalvataggio(); }
     document.getElementById('newLogInput').addEventListener('keypress', function (e) { if (e.key === 'Enter') { salvaLog(); } });
